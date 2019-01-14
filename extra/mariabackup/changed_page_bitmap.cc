@@ -201,8 +201,8 @@ log_online_read_bitmap_page(
 
 		/* The following call prints an error message */
 		os_file_get_last_error(TRUE);
-		msg("InnoDB: Warning: failed reading changed page bitmap "
-		    "file \'%s\'\n", bitmap_file->name);
+		msg_ts("InnoDB: Warning: failed reading changed page bitmap "
+		    "file \'%s\'", bitmap_file->name);
 		return FALSE;
 	}
 
@@ -281,7 +281,7 @@ log_online_setup_bitmap_file_range(
 	bitmap_dir = os_file_opendir(srv_data_home, FALSE);
 	if (UNIV_UNLIKELY(!bitmap_dir)) {
 
-		msg("InnoDB: Error: failed to open bitmap directory \'%s\'\n",
+		msg_ts("InnoDB: Error: failed to open bitmap directory \'%s\'",
 		    srv_data_home);
 		return FALSE;
 	}
@@ -331,7 +331,7 @@ log_online_setup_bitmap_file_range(
 	if (UNIV_UNLIKELY(os_file_closedir(bitmap_dir))) {
 
 		os_file_get_last_error(TRUE);
-		msg("InnoDB: Error: cannot close \'%s\'\n",srv_data_home);
+		msg_ts("InnoDB: Error: cannot close \'%s\'",srv_data_home);
 		return FALSE;
 	}
 
@@ -348,7 +348,7 @@ log_online_setup_bitmap_file_range(
 	bitmap_dir = os_file_opendir(srv_data_home, FALSE);
 	if (UNIV_UNLIKELY(!bitmap_dir)) {
 
-		msg("InnoDB: Error: failed to open bitmap directory \'%s\'\n",
+		msg_ts("InnoDB: Error: failed to open bitmap directory \'%s\'",
 		    srv_data_home);
 		return FALSE;
 	}
@@ -378,8 +378,8 @@ log_online_setup_bitmap_file_range(
 		array_pos = file_seq_num - first_file_seq_num;
 		if (UNIV_UNLIKELY(array_pos >= bitmap_files->count)) {
 
-			msg("InnoDB: Error: inconsistent bitmap file "
-			    "directory\n");
+			msg_ts("InnoDB: Error: inconsistent bitmap file "
+			    "directory");
 			free(bitmap_files->files);
 			return FALSE;
 		}
@@ -399,7 +399,7 @@ log_online_setup_bitmap_file_range(
 	if (UNIV_UNLIKELY(os_file_closedir(bitmap_dir))) {
 
 		os_file_get_last_error(TRUE);
-		msg("InnoDB: Error: cannot close \'%s\'\n", srv_data_home);
+		msg_ts("InnoDB: Error: cannot close \'%s\'", srv_data_home);
 		free(bitmap_files->files);
 		return FALSE;
 	}
@@ -449,8 +449,8 @@ log_online_open_bitmap_file_read_only(
 
 		/* Here and below assume that bitmap file names do not
 		contain apostrophes, thus no need for ut_print_filename(). */
-		msg("InnoDB: Warning: error opening the changed page "
-		    "bitmap \'%s\'\n", bitmap_file->name);
+		msg_ts("InnoDB: Warning: error opening the changed page "
+		    "bitmap \'%s\'", bitmap_file->name);
 		return success;
 	}
 
@@ -493,8 +493,8 @@ log_online_diagnose_bitmap_eof(
 			to read, it's junk.  This error is not fatal in
 			itself. */
 
-			msg("InnoDB: Warning: junk at the end of changed "
-			    "page bitmap file \'%s\'.\n", bitmap_file->name);
+			msg_ts("InnoDB: Warning: junk at the end of changed "
+			    "page bitmap file \'%s\'.", bitmap_file->name);
 		}
 
 		if (UNIV_UNLIKELY(!last_page_in_run)) {
@@ -503,9 +503,9 @@ log_online_diagnose_bitmap_eof(
 			a run */
 			/* It's a "Warning" here because it's not a fatal error
 			for the whole server */
-			msg("InnoDB: Warning: changed page bitmap "
+			msg_ts("InnoDB: Warning: changed page bitmap "
 			    "file \'%s\' does not contain a complete run "
-			    "at the end.\n", bitmap_file->name);
+			    "at the end.", bitmap_file->name);
 			return FALSE;
 		}
 	}
@@ -535,8 +535,8 @@ xb_msg_missing_lsn_data(
 	lsn_t	missing_interval_start,	/*!<in: interval start */
 	lsn_t	missing_interval_end)	/*!<in: interval end */
 {
-	msg("mariabackup: warning: changed page data missing for LSNs between "
-	    LSN_PF " and " LSN_PF "\n", missing_interval_start,
+	msg_ts("mariabackup: warning: changed page data missing for LSNs between "
+	    LSN_PF " and " LSN_PF, missing_interval_start,
 	    missing_interval_end);
 }
 
@@ -612,9 +612,9 @@ xb_page_bitmap_init(void)
 
 	if (UNIV_UNLIKELY(bmp_start_lsn > bmp_end_lsn)) {
 
-		msg("mariabackup: incremental backup LSN " LSN_PF
+		msg_ts("mariabackup: incremental backup LSN " LSN_PF
 		    " is larger than than the last checkpoint LSN " LSN_PF
-		    "\n", bmp_start_lsn, bmp_end_lsn);
+		    , bmp_start_lsn, bmp_end_lsn);
 		return NULL;
 	}
 
@@ -697,8 +697,8 @@ xb_page_bitmap_init(void)
 						      &current_page_end_lsn,
 						      bmp_start_lsn))) {
 
-		msg("mariabackup: Warning: changed page bitmap file "
-		    "\'%s\' corrupted\n", bitmap_file.name);
+		msg_ts("mariabackup: Warning: changed page bitmap file "
+		    "\'%s\' corrupted", bitmap_file.name);
 		rbt_free(result);
 		free(bitmap_files.files);
 		os_file_close(bitmap_file.file);
@@ -802,8 +802,8 @@ xb_page_bitmap_init(void)
 
 		if (UNIV_UNLIKELY(!last_page_ok)) {
 
-			msg("mariabackup: warning: changed page bitmap file "
-			    "\'%s\' corrupted.\n", bitmap_file.name);
+			msg_ts("mariabackup: warning: changed page bitmap file "
+			    "\'%s\' corrupted.", bitmap_file.name);
 			rbt_free(result);
 			free(bitmap_files.files);
 			os_file_close(bitmap_file.file);

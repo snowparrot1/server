@@ -67,15 +67,15 @@ validate_chunk_type(uchar code)
 	}
 }
 
-int
+xb_rstream_result_t
 xb_stream_validate_checksum(xb_rstream_chunk_t *chunk)
 {
 	ulong	checksum;
 
-	checksum = crc32_iso3309(0, chunk->data, (uint)chunk->length);
+	checksum = crc32_iso3309(0, (unsigned char *)chunk->data, (uint)chunk->length);
 	if (checksum != chunk->checksum) {
-		msg("xb_stream_read_chunk(): invalid checksum at offset "
-		    "0x%llx: expected 0x%lx, read 0x%lx.\n",
+		msg_ts("xb_stream_read_chunk(): invalid checksum at offset "
+		    "0x%llx: expected 0x%lx, read 0x%lx.",
 		    (ulonglong) chunk->checksum_offset, chunk->checksum,
 		    checksum);
 		return XB_STREAM_READ_ERROR;
@@ -86,8 +86,8 @@ xb_stream_validate_checksum(xb_rstream_chunk_t *chunk)
 
 #define F_READ(buf,len)                                       	\
 	do {                                                      	\
-		if (xb_read_full(fd, buf, len) < len) {	\
-			msg("xb_stream_read_chunk(): my_read() failed.\n"); \
+		if (xb_read_full(fd, (uchar *)buf, len) < len) {	\
+			msg_ts("xb_stream_read_chunk(): my_read() failed."); \
 			goto err;                                 	\
 		}							\
 	} while (0)
@@ -110,8 +110,8 @@ xb_stream_read_chunk(xb_rstream_t *stream, xb_rstream_chunk_t *chunk)
 	if (tbytes == 0) {
 		return XB_STREAM_READ_EOF;
 	} else if (tbytes < CHUNK_HEADER_CONSTANT_LEN) {
-		msg("xb_stream_read_chunk(): unexpected end of stream at "
-		    "offset 0x%llx.\n", stream->offset);
+		msg_ts("xb_stream_read_chunk(): unexpected end of stream at "
+		    "offset 0x%llx.", stream->offset);
 		goto err;
 	}
 
@@ -119,8 +119,8 @@ xb_stream_read_chunk(xb_rstream_t *stream, xb_rstream_chunk_t *chunk)
 
 	/* Chunk magic value */
 	if (memcmp(tmpbuf, XB_STREAM_CHUNK_MAGIC, 8)) {
-		msg("xb_stream_read_chunk(): wrong chunk magic at offset "
-		    "0x%llx.\n", (ulonglong) stream->offset);
+		msg_ts("xb_stream_read_chunk(): wrong chunk magic at offset "
+		    "0x%llx.", (ulonglong) stream->offset);
 		goto err;
 	}
 	ptr += 8;
@@ -134,8 +134,8 @@ xb_stream_read_chunk(xb_rstream_t *stream, xb_rstream_chunk_t *chunk)
 	chunk->type = validate_chunk_type(*ptr);
 	if (chunk->type == XB_CHUNK_TYPE_UNKNOWN &&
 	    !(chunk->flags & XB_STREAM_FLAG_IGNORABLE)) {
-		msg("xb_stream_read_chunk(): unknown chunk type 0x%lu at "
-		    "offset 0x%llx.\n", (ulong) *ptr,
+		msg_ts("xb_stream_read_chunk(): unknown chunk type 0x%lu at "
+		    "offset 0x%llx.", (ulong) *ptr,
 		    (ulonglong) stream->offset);
 		goto err;
 	}
@@ -145,8 +145,8 @@ xb_stream_read_chunk(xb_rstream_t *stream, xb_rstream_chunk_t *chunk)
 	/* Path length */
 	pathlen = uint4korr(ptr);
 	if (pathlen >= FN_REFLEN) {
-		msg("xb_stream_read_chunk(): path length (%lu) is too large at "
-		    "offset 0x%llx.\n", (ulong) pathlen, stream->offset);
+		msg_ts("xb_stream_read_chunk(): path length (%lu) is too large at "
+		    "offset 0x%llx.", (ulong) pathlen, stream->offset);
 		goto err;
 	}
 	chunk->pathlen = pathlen;
@@ -169,8 +169,8 @@ xb_stream_read_chunk(xb_rstream_t *stream, xb_rstream_chunk_t *chunk)
 	F_READ(tmpbuf, 16);
 	ullval = uint8korr(tmpbuf);
 	if (ullval > (ulonglong) SIZE_T_MAX) {
-		msg("xb_stream_read_chunk(): chunk length is too large at "
-		    "offset 0x%llx: 0x%llx.\n", (ulonglong) stream->offset,
+		msg_ts("xb_stream_read_chunk(): chunk length is too large at "
+		    "offset 0x%llx: 0x%llx.", (ulonglong) stream->offset,
 		    ullval);
 		goto err;
 	}
@@ -180,8 +180,8 @@ xb_stream_read_chunk(xb_rstream_t *stream, xb_rstream_chunk_t *chunk)
 	/* Payload offset */
 	ullval = uint8korr(tmpbuf + 8);
 	if (ullval > (ulonglong) MY_OFF_T_MAX) {
-		msg("xb_stream_read_chunk(): chunk offset is too large at "
-		    "offset 0x%llx: 0x%llx.\n", (ulonglong) stream->offset,
+		msg_ts("xb_stream_read_chunk(): chunk offset is too large at "
+		    "offset 0x%llx: 0x%llx.", (ulonglong) stream->offset,
 		    ullval);
 		goto err;
 	}
@@ -193,8 +193,8 @@ xb_stream_read_chunk(xb_rstream_t *stream, xb_rstream_chunk_t *chunk)
 		chunk->data = my_realloc(chunk->data, chunk->length,
 					 MYF(MY_WME | MY_ALLOW_ZERO_PTR));
 		if (chunk->data == NULL) {
-			msg("xb_stream_read_chunk(): failed to increase buffer "
-			    "to %lu bytes.\n", (ulong) chunk->length);
+			msg_ts("xb_stream_read_chunk(): failed to increase buffer "
+			    "to %lu bytes.", (ulong) chunk->length);
 			goto err;
 		}
 		chunk->buflen = chunk->length;
