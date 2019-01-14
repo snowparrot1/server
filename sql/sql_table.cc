@@ -6168,6 +6168,8 @@ static bool fill_alter_inplace_info(THD *thd,
   KEY_PART_INFO *key_part, *new_part;
   KEY_PART_INFO *end;
   uint candidate_key_count= 0;
+  uint old_candidate_key_count= 0, new_candidate_key_count= 0;
+  bool is_old_pk_exist= false, is_new_pk_exist= false;
   Alter_info *alter_info= ha_alter_info->alter_info;
   DBUG_ENTER("fill_alter_inplace_info");
 
@@ -6448,6 +6450,26 @@ static bool fill_alter_inplace_info(THD *thd,
   */
   ha_alter_info->index_drop_count= 0;
   ha_alter_info->index_add_count= 0;
+
+  for (table_key= table->key_info; table_key < table_key_end; table_key++)
+  {
+    is_old_pk_exist= (table_key->flags & HA_NOSAME
+                      && !strcmp(table_key->name, primary_key_name));
+    if (is_old_pk_exist)
+      break;
+  }
+
+  for (new_key= ha_alter_info->key_info_buffer;
+       new_key < new_key_end;
+       new_key++)
+  {
+    is_new_pk_exist= (new_key->flags & HA_NOSAME
+                      && !strcmp(new_key->name, primary_key_name));
+
+   if (is_new_pk_exist)
+     break;
+  }
+
   for (table_key= table->key_info; table_key < table_key_end; table_key++)
   {
     /* Search a new key with the same name. */
@@ -6511,6 +6533,27 @@ static bool fill_alter_inplace_info(THD *thd,
       */
       if (! new_field->field ||
           new_field->field->field_index != key_part->fieldnr - 1)
+        goto index_changed;
+    }
+
+    if (is_candidate_key(table_key))
+      old_candidate_key_count++;
+
+    if (is_candidate_key(new_key))
+      new_candidate_key_count++;
+
+    /*
+	When there is a no explicit primary key then there is a change in
+        candidate for primary key then rebuild the index. So that ADD_PK_INDEX,
+        DROP_PK_INDEX can be set.
+    */
+    if (!is_old_pk_exist && !is_new_pk_exist)
+    {
+      /* If old_candidate_key_count is 1 then old index which is candidate
+         for primary key. If new_candidate_key_count is 1 then next existing
+         index which is candidate for primary key. */
+      if ((old_candidate_key_count == 1 || new_candidate_key_count == 1)
+          && old_candidate_key_count != new_candidate_key_count)
         goto index_changed;
     }
     continue;
